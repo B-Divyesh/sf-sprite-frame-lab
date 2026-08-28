@@ -1,8 +1,12 @@
-const VERSION = 'frame-uv-v1.2';
+const VERSION = 'frame-uv-v1.5';
 const SHELL = ['/', '/offline.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/assets/uv-blueprint-plate.webp'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)));
+  event.waitUntil(caches.open(VERSION).then((cache) => Promise.all(SHELL.map(async (url) => {
+    const response = await fetch(new Request(url, { cache: 'reload' }));
+    if (!response.ok) throw new Error(`Could not precache ${url}`);
+    return cache.put(url, response);
+  }))));
   self.skipWaiting();
 });
 self.addEventListener('activate', (event) => {

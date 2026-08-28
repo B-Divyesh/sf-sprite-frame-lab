@@ -1,0 +1,11 @@
+{
+  "slug": "sprite-frame-lab",
+  "title": "Frame UV Lab",
+  "territory": "games-creative",
+  "user": "2D game artists and shader-capable developers who need a visual, reliable way to apply per-frame effects to sprite sheets and UI icons without hand-deriving UV math.",
+  "smallest_useful_product": "A local web lab that imports a sheet and frame map, previews common UV-aware effects over any selected frame, and exports annotated GLSL snippets plus generic atlas JSON.",
+  "success_measure": "Users produce an effect preview and compile-ready UV constants for a 16-frame sheet in under ten minutes without editing normalized coordinates by hand.",
+  "artifact_class": "pwa-offline",
+  "monetization": "freemium",
+  "constraints": "Keep art local; use only original/open sample assets; label generated shader code as an example requiring engine-side validation."
+}

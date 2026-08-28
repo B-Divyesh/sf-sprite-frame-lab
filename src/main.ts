@@ -94,10 +94,12 @@ function loadImage(blob: Blob): Promise<HTMLImageElement> {
 async function openSheet(blob: Blob, name: string, columns = 4, rows = 4, customFrames?: FrameRect[]): Promise<void> {
   const image = await loadImage(blob);
   if (image.naturalWidth * image.naturalHeight > 25_000_000) throw new Error('That sheet is over 25 megapixels. Resize it to keep previews responsive.');
+  const safeColumns = Math.min(Math.max(1, Math.floor(columns)), image.naturalWidth, 64);
+  const safeRows = Math.min(Math.max(1, Math.floor(rows)), image.naturalHeight, 64);
   sourceImage = image;
   state = {
-    blob, name, width: image.naturalWidth, height: image.naturalHeight, columns, rows,
-    frames: customFrames ?? makeGridFrames(image.naturalWidth, image.naturalHeight, columns, rows),
+    blob, name, width: image.naturalWidth, height: image.naturalHeight, columns: safeColumns, rows: safeRows,
+    frames: customFrames ?? makeGridFrames(image.naturalWidth, image.naturalHeight, safeColumns, safeRows),
     customFrames: Boolean(customFrames), selected: 0, effect: 'outline', amount: .55, color: '#55dde0',
   };
   renderEditor();
@@ -163,10 +165,10 @@ function renderEditor(): void {
           <h2 class="panel-heading" data-index="02 / MAP">Frame map</h2>
           <p class="section-copy">Use an even grid, or import TexturePacker/generic JSON.</p>
           <div class="grid-pair">
-            <label>Columns<input id="columns" type="number" min="1" max="64" value="${state.columns}" ${state.customFrames ? 'disabled' : ''} /></label>
-            <label>Rows<input id="rows" type="number" min="1" max="64" value="${state.rows}" ${state.customFrames ? 'disabled' : ''} /></label>
+            <label>Columns<input id="columns" type="number" min="1" max="${Math.min(64, state.width)}" value="${state.columns}" ${state.customFrames ? 'disabled' : ''} /></label>
+            <label>Rows<input id="rows" type="number" min="1" max="${Math.min(64, state.height)}" value="${state.rows}" ${state.customFrames ? 'disabled' : ''} /></label>
           </div>
-          <div class="button-row" style="margin-top:10px">
+          <div class="button-row map-actions">
             <label class="button button-small file-button">Import frame JSON<input id="map-input" type="file" accept="application/json,.json" /></label>
             ${state.customFrames ? '<button id="reset-grid" class="button-small button-quiet" type="button">Return to grid</button>' : ''}
           </div>
@@ -217,7 +219,7 @@ function renderEditor(): void {
 
 function renderProBox(): string {
   if (proUnlocked) return `<div class="pro-box"><div class="pro-title"><strong>Pro unlocked</strong><span class="badge">ACTIVE</span></div><p>Damage flash and CRT scanline templates are ready. Your license is stored only on this device.</p><button id="verify-license" class="button-small" type="button">Verify license</button></div>`;
-  return `<div class="pro-box"><div class="pro-title"><strong>Frame UV Pro · $12</strong><span class="badge">ONE TIME</span></div><p>Add damage-flash and scanline templates plus future engine export targets. Free atlas and GLSL exports stay free.</p><a class="button button-primary button-small" href="${checkoutUrl}">Buy Pro securely</a><label style="margin-top:12px">Have a license?<span class="license-row"><input id="license-input" type="text" autocomplete="off" aria-label="License token" placeholder="Paste license token" /><button id="restore-license" class="button-small" type="button">Restore</button></span></label><p id="license-message" class="error" role="status"></p><p class="legal-mini">Checkout is hosted by Sociobot; Dodo is merchant of record. Refunds there revoke the license. See <a href="/terms/">terms</a>.</p></div>`;
+  return `<div class="pro-box"><div class="pro-title"><strong>Frame UV Pro · $12</strong><span class="badge">ONE TIME</span></div><p>Add damage-flash and scanline templates plus future engine export targets. Free atlas and GLSL exports stay free.</p><a class="button button-primary button-small" href="${checkoutUrl}">Buy Pro securely</a><label class="license-label">Have a license?<span class="license-row"><input id="license-input" type="text" autocomplete="off" aria-label="License token" placeholder="Paste license token" /><button id="restore-license" class="button-small" type="button">Restore</button></span></label><p id="license-message" class="error" role="status"></p><p class="legal-mini">Checkout is hosted by Sociobot; Dodo is merchant of record. Refunds there revoke the license. See <a href="/terms/">terms</a>.</p></div>`;
 }
 
 function bindEditorEvents(): void {
@@ -241,8 +243,10 @@ function bindEditorEvents(): void {
 
 function gridChanged(): void {
   if (!state) return;
-  const columns = Math.max(1, Math.min(64, Number(document.querySelector<HTMLInputElement>('#columns')!.value)));
-  const rows = Math.max(1, Math.min(64, Number(document.querySelector<HTMLInputElement>('#rows')!.value)));
+  const rawColumns = Number(document.querySelector<HTMLInputElement>('#columns')!.value);
+  const rawRows = Number(document.querySelector<HTMLInputElement>('#rows')!.value);
+  const columns = Math.min(Math.max(1, Number.isFinite(rawColumns) ? Math.floor(rawColumns) : 1), state.width, 64);
+  const rows = Math.min(Math.max(1, Number.isFinite(rawRows) ? Math.floor(rawRows) : 1), state.height, 64);
   state.columns = columns; state.rows = rows; state.frames = makeGridFrames(state.width, state.height, columns, rows); state.selected = 0; state.customFrames = false;
   renderEditor(); scheduleSave();
 }
@@ -338,12 +342,15 @@ function drawPreview(): void {
   const dw = Math.max(1, Math.round(frame.w * scale)), dh = Math.max(1, Math.round(frame.h * scale));
   const dx = Math.round((canvas.width - dw) / 2), dy = Math.round((canvas.height - dh) / 2);
   ctx.imageSmoothingEnabled = false;
-  if (state.effect === 'outline') {
+  if (state.effect === 'outline' && state.amount > 0) {
     const thickness = Math.max(2, Math.round(3 + state.amount * 8));
+    ctx.save();
+    ctx.globalAlpha = state.amount;
     ctx.filter = `drop-shadow(${thickness}px 0 0 ${state.color}) drop-shadow(-${thickness}px 0 0 ${state.color}) drop-shadow(0 ${thickness}px 0 ${state.color}) drop-shadow(0 -${thickness}px 0 ${state.color})`;
+    ctx.drawImage(sourceImage, frame.x, frame.y, frame.w, frame.h, dx, dy, dw, dh);
+    ctx.restore();
   }
   ctx.drawImage(sourceImage, frame.x, frame.y, frame.w, frame.h, dx, dy, dw, dh);
-  ctx.filter = 'none';
   if (state.effect === 'tint' || state.effect === 'flash') {
     ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = state.effect === 'flash' ? `rgba(255,255,255,${state.amount})` : hexToRgba(state.color, state.amount); ctx.fillRect(dx, dy, dw, dh); ctx.globalCompositeOperation = 'source-over';
   }
@@ -386,8 +393,10 @@ function download(filename: string, content: string, type: string): void {
 
 function exportAtlas(): void {
   if (!state) return;
-  download(`${state.name.replace(/\.[^.]+$/, '')}.atlas.json`, genericAtlas(state.name, state.width, state.height, state.frames), 'application/json');
-  announce(`Atlas JSON exported with ${state.frames.length} frame${state.frames.length === 1 ? '' : 's'}.`);
+  try {
+    download(`${state.name.replace(/\.[^.]+$/, '')}.atlas.json`, genericAtlas(state.name, state.width, state.height, state.frames), 'application/json');
+    announce(`Atlas JSON exported with ${state.frames.length} frame${state.frames.length === 1 ? '' : 's'}.`);
+  } catch (error) { announce((error as Error).message); }
 }
 
 async function restoreLicense(): Promise<void> {
@@ -433,7 +442,9 @@ async function restoreWorkspace(): Promise<void> {
     const image = await loadImage(saved.image);
     sourceImage = image;
     const frames = saved.frames as FrameRect[] | null;
-    state = { blob: saved.image, name: saved.name, width: saved.width, height: saved.height, columns: saved.columns, rows: saved.rows, frames: frames ?? makeGridFrames(saved.width, saved.height, saved.columns, saved.rows), customFrames: Boolean(frames), selected: saved.selected, effect: saved.effect, amount: saved.amount, color: saved.color };
+    const columns = Math.min(Math.max(1, Math.floor(saved.columns)), saved.width, 64);
+    const rows = Math.min(Math.max(1, Math.floor(saved.rows)), saved.height, 64);
+    state = { blob: saved.image, name: saved.name, width: saved.width, height: saved.height, columns, rows, frames: frames ?? makeGridFrames(saved.width, saved.height, columns, rows), customFrames: Boolean(frames), selected: saved.selected, effect: saved.effect, amount: saved.amount, color: saved.color };
     renderEditor(); saveStatus.textContent = `Restored ${new Date(saved.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   } catch { renderEmpty(); announce('The saved workspace could not be restored. Start with a new sheet.'); }
 }

@@ -37,11 +37,13 @@ The deployable site is written to `dist/`, with `dist/index.html` at its root.
 
 ```sh
 npm test
-npm run test:e2e
+npm run typecheck
+npm run lint
 npm run build
+npm run test:e2e
 ```
 
-The browser suite covers the sample workflow, IndexedDB restoration, an actual offline reload, keyboard frame selection, a 390px mobile path, console errors, and serious/critical axe violations. Playwright 1.58.2 is pinned; the factory image includes its Chromium build.
+The browser suite covers the sample workflow, 1×1 grid safety, duplicate-name rejection, outline shader compilation, IndexedDB restoration, an actual offline reload, keyboard focus and frame selection, 44px targets at 390px, legal pages, console errors, and serious/critical axe violations. Playwright 1.58.2 is pinned; the factory image includes its Chromium build.
 
 ## Frame JSON
 

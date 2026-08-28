@@ -1,5 +1,6 @@
-const VERSION = 'frame-uv-v1.5';
-const SHELL = ['/', '/offline.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/assets/uv-blueprint-plate.webp'];
+const VERSION = 'frame-uv-v1.6';
+const APP_ASSETS = []; // injected by Vite build
+const SHELL = ['/', '/offline.html', '/assets/offline.css', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/assets/uv-blueprint-plate.webp', ...APP_ASSETS];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then((cache) => Promise.all(SHELL.map(async (url) => {
@@ -21,10 +22,10 @@ self.addEventListener('fetch', (event) => {
       const copy = response.clone();
       caches.open(VERSION).then((cache) => cache.put(event.request, copy));
       return response;
-    }).catch(async () => (await caches.match(event.request)) || (await caches.match('/')) || caches.match('/offline.html')));
+    }).catch(async () => (await caches.match(event.request, { ignoreVary: true })) || (await caches.match('/')) || caches.match('/offline.html')));
     return;
   }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+  event.respondWith(caches.match(event.request, { ignoreVary: true }).then((cached) => cached || fetch(event.request).then((response) => {
     if (response.ok) caches.open(VERSION).then((cache) => cache.put(event.request, response.clone()));
     return response;
   })));

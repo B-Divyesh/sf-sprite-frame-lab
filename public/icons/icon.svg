@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Frame UV Lab crop mark icon">
+  <rect width="512" height="512" rx="72" fill="#07131c"/>
+  <path d="M84 196V84h112M316 84h112v112M428 316v112H316M196 428H84V316" fill="none" stroke="#55dde0" stroke-width="28"/>
+  <rect x="152" y="152" width="208" height="208" fill="#123042" stroke="#f1f7f2" stroke-width="12"/>
+  <path d="M152 256h208M256 152v208" stroke="#55dde0" stroke-width="8" opacity=".75"/>
+  <circle cx="256" cy="256" r="18" fill="#ffc857"/>
+</svg>

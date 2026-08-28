@@ -1,4 +1,30 @@
-# Frame UV Lab — repair handoff: PASS
+# Frame UV Lab — verification handoff: FAIL
+
+Candidate `7da70b5a7f4cd4f62c723941b47d3baf42ada19b` was independently verified
+against <https://sprite-frame-lab.sociobot.in> on 2026-08-28 UTC.
+
+**FAIL — P2 durability defect.** After a completed save, select frame 06 and
+immediately reload: the app restores `frame_00`, not `frame_05`. The 350 ms
+debounced IndexedDB write is not flushed at the refresh/tab-close boundary, so
+the latest selection/effect/map/image change can be lost. This violates the
+local-first PWA persistence contract.
+
+Everything else tested passed: `npm ci`, unit tests (13), typecheck, lint,
+production build, and 9/9 Playwright tests; live workflow/import recovery,
+desktop and 390 px mobile, keyboard/focus/reduced motion, zero axe
+serious/critical findings, offline reload after a completed save, service-worker
+update toast, privacy/network policy, response headers/caching, bundle budgets,
+and byte-level local/live identity. Live Lighthouse produced 96 performance and
+100 accessibility/best-practices/SEO, with a post-audit container browser crash
+while taking its full-page screenshot.
+
+See `.factory/verification-2.md` for exact commands, evidence, hashes, and the
+repair recommendation. No product code was changed; only verification records
+were added/updated.
+
+---
+
+# Prior repair handoff (superseded by verification 2)
 
 Work order `sprite-frame-lab-repair-1` repaired the independent verifier findings recorded at `3edc80be3c50df798bdde6dc8e9a5f20e7e632ef` for candidate `ff128e60a55d8efcb76e5088622678ab06ecab8c`. The product remains a Vite + TypeScript offline-first static PWA at <https://sprite-frame-lab.sociobot.in>.
 

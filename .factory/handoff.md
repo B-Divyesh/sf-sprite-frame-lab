@@ -1,43 +1,45 @@
-# Frame UV Lab — build handoff
+# Frame UV Lab — verification handoff: FAIL
 
-Work order: `sprite-frame-lab-build-1` · Completed: 2026-08-28
+Work order `sprite-frame-lab-verify-1` independently tested candidate `ff128e60a55d8efcb76e5088622678ab06ecab8c` at `https://sprite-frame-lab.sociobot.in` on 2026-08-28 UTC.
 
-## What shipped
+## Verdict
 
-- A finished vanilla TypeScript/Vite PWA at the repository root, building to `dist/`.
-- Local PNG/JPEG/WebP import with decode, size, and format errors.
-- A deterministic original 4×4 sample sheet for a zero-setup path.
-- Even-grid frame mapping plus TexturePacker/generic atlas JSON import and validation.
-- Click and keyboard frame selection, live pixel/UV bounds, frame descriptions, and canvas previews for outline, tint, dissolve, damage-flash, and scanline effects.
-- Annotated GLSL example copy and generic atlas JSON download. Core export is not paywalled.
-- IndexedDB workspace persistence, explicit JSON atlas ownership, offline/install manifest, versioned service-worker shell, offline status, and update toast.
-- $12 one-time Pro presentation, hosted Sociobot checkout link, returned-token capture, device restore field, once-daily verification cache, optimistic offline unlock, and quiet revocation behavior. No hardcoded product ID.
-- Responsive blueprint drafting-sheet system, original generated hero plate (40 KB optimized WebP), authored PWA icons, 390px layout, focus/reduced-motion treatments, and privacy/terms pages.
+**FAIL. Do not promote this candidate.** The deployed root, worker, and manifest are byte-for-byte identical to the candidate build, so this is not a stale-deployment result.
 
-## Verification
+Release blockers:
 
-Run from a clean clone with Node.js 20+:
+1. **HIGH:** The advertised production checkout returns HTTP 404 with `{"error":"enabled factory product","status":404}`.
+2. **HIGH:** The default Pixel outline export does not implement an outline; it comments that neighboring samples are needed and returns the unmodified color.
+3. **MEDIUM:** A small valid image plus accepted 64-column/row settings creates zero-area frames and invalid atlas output.
+4. **MEDIUM:** Duplicate imported frame names are displayed separately but silently collapse to one object entry on export.
+5. **MEDIUM:** The hidden file input has no visible keyboard focus on its label, and several 390 px controls are only 36 px high; legal links are 15–19 px high.
+6. **LOW:** Production lacks CSP, Permissions-Policy, and explicit anti-framing headers, and static assets use a 30-second revalidation policy rather than immutable caching.
+
+Full evidence and reproductions are in [verification-1.md](verification-1.md).
+
+## Passing evidence
+
+- Clean candidate: local HEAD and `origin/main` both `ff128e60a55d8efcb76e5088622678ab06ecab8c`.
+- `npm ci`, `npm audit`, `npm test` (7/7), `npx tsc --noEmit`, `npm run build`, and `npm run test:e2e` (4/4) passed. No lint command exists.
+- Free sample/image, grid, valid/invalid JSON, frame selection, three free previews, clipboard, atlas download, persistence, keyboard core flow, and error recovery were exercised locally and live.
+- Free workflow emitted only same-origin and local `blob:` requests; no art upload, analytics, tracker, CDN font, or third-party script was observed.
+- Axe reported zero violations (including zero serious/critical) in empty/editor/legal states. No console or page errors occurred.
+- Desktop 1440×1000, mobile 390×844, 200% text, and reduced motion were checked. Layouts did not overflow horizontally.
+- PWA installability had zero Chromium errors. Service-worker control, update notification, offline editor reload, IndexedDB restoration, and offline cold start at `/?v=1` worked.
+- Live Lighthouse: Performance 99, Accessibility 100, Best Practices 100, SEO 100; LCP 1.1 s, TBT 110 ms, CLS 0.
+- Bundle budgets pass: 24,539 B inline JS, 10,616 B inline CSS, 40,218 B hero WebP; 101,202 B complete `dist/`.
+
+## Reverify after fixes
+
+Run:
 
 ```sh
 npm ci
+npm audit --audit-level=low
 npm test
+npx tsc --noEmit
 npm run build
 npm run test:e2e
 ```
 
-- `npm test`: 7/7 unit tests passing.
-- `npm run test:e2e`: 4/4 Chromium tests passing, including real `context.setOffline(true)` reload with IndexedDB workspace restored, arrow-key frame navigation, 390 × 844 mobile flow, no console errors, and axe with zero serious/critical findings in empty and editor states.
-- `npm run build`: passing; output is `dist/` with `dist/index.html` at root.
-- Production payload: inlined JS + CSS shell is 35.9 KB raw / 12.25 KB gzip; optimized hero is 40.2 KB. This is under the 200 KB JS, 50 KB CSS, and 300 KB hero budgets.
-- Lighthouse 13 mobile/default throttling against the production preview: Performance **100**, Accessibility **100**, Best Practices **100**, SEO **92**; LCP **1.0 s**, total blocking time **20 ms**, CLS **0**.
-- `npm audit`: 0 vulnerabilities.
-
-## Asset provenance
-
-`assets/src/uv-blueprint-plate.png` was generated through the factory image deployment using `/opt/fleet/lib/gen-image.sh`, reviewed for text artifacts/brands/unwanted symbols, and optimized to `public/assets/uv-blueprint-plate.webp`. The exact prompt and review are in `.factory/design.md` and its adjacent JSON sidecar. The sample sprite and icons are authored in repository code.
-
-## Known gaps and next steps
-
-- GLSL is intentionally generic and must be validated in the target engine; engine-specific Godot/Unity export adapters are future Pro targets.
-- The factory still needs to register the live/test paid product and switch environment routing at release. The app uses the required production slug URL and contains no provider secret.
-- SEO scored 92 because the local preview has no crawlable deployed-origin canonical metadata; this does not affect the installed editor.
+Then retest the live checkout, compare deployed artifact hashes with `dist/`, exercise outline GLSL behavior, 1×1 and other narrow-sheet grid limits, duplicate-name import/export, visible keyboard focus, 44 px mobile targets, service-worker update/offline reload, request privacy, response headers, axe, and Lighthouse.
